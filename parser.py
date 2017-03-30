@@ -1,10 +1,9 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 
 import imp,os
 import ConfigParser
-
-
-
 
 
 def __load_all_sources(config,dir='modules/sources'):

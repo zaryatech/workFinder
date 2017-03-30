@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import re
 from mako.template import Template
@@ -44,6 +44,6 @@ def createQuery(keyWords):
 def loadData(config):
     keyWords=config.get('KeyWords','keyWords')
     print(YANDEX_XML_TEMPLATE.render_unicode(query=createQuery(keyWords)))
-    result = [{'header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
+    result = [{'source':'yandex','header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
      'description':'Токарно-фрезерные, расточные, шлифовальные работы. Обработка давлением. ... «ПРЕССЛИТМАШ» изготавливает детали из металла по вашим образцам, эскизам или чертежам.'}]
     return result
