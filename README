@@ -3,4 +3,5 @@ pip install Cython
 pip install tesserocr 
 pip install requests
 pip install image
+pip install xlsxwriter
 

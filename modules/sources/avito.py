@@ -13,9 +13,12 @@ from selenium.webdriver.chrome.options import Options
 import io
 from datetime import datetime, timedelta
 import locale
-import sys, traceback
+import traceback
 locale.setlocale(locale.LC_ALL,'ru_RU.utf-8')
-
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+import xlsxwriter
 
 date_unit={
 'Сегодня':datetime.today(),
@@ -37,20 +40,35 @@ month_unit={
     'декабря':'Декабрь'
 }
 
+region_unit={
+    'udmurtiya':'Удмуртия',
+    'bashkortostan':'Башкортостан',
+    'tatarstan':'Татарстан',
+    'kirovskaya_oblast':'Кировская область',
+    'permskiy_kray':'Пермский край',
+}
+
 
 def parseADate(date):
     try:
-        d = date_unit.get(date,None)
-        if d is None:
-            _=date.split()
-            _[1]=month_unit[_[1].encode('utf-8')]
-            d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year),'%d %B %Y')
-            #d=datetime.strptime('06 Апрель 2017','%d %B %Y')
-            if datetime.today()<d:
-                d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year-1),'%d %B %Y')
+	dateStr=unicodedata.normalize('NFKD', date)
+        suff=re.search('(\d\d\d\d)$',dateStr)
+        d=None
+        if suff is None:
+            dateStr=re.sub(r'\s*\d\d:\d\d$',r'',dateStr.encode('utf-8'))
+            d = date_unit.get(dateStr,None)
+            if d is None:
+                _=date.split()
+                _[1]=month_unit[_[1].encode('utf-8')]
+                d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year),'%d %B %Y')
+                if datetime.today()<d:
+                    d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year-1),'%d %B %Y')
+            else:
+                # убираем время
+                d=datetime(d.year,d.month,d.day)
         return d
     except:
-        print "[ERROR]can't parse " + date
+        print '[ERROR]can\'t parse ' + date
 
 
 def getADate(dateStr):
@@ -63,21 +81,30 @@ def getADate(dateStr):
     dateStr=unicodedata.normalize("NFKD", dateStr)
     suff=re.search('(\d\d\d\d)$',dateStr)
     if suff is not None:
-        # больше года назад
-        return None
+        _=date.split()
+        _[1]=month_unit[_[1]]
+        d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year),'%d %B %Y')
+        if datetime.today()<d:
+           d=datetime.strptime('{} {} {}'.format(_[0],_[1],datetime.today().year-1),'%d %B %Y')
+        return d
     else:
         return parseADate(dateStr)
 
 
-def loadSallerInfo(href,vacancy, saller_dict):
-    driver.get('https://www.avito.ru{}'.format(vacancy['href']))
-    oref=driver.find_element(By.XPATH,'//div[@class="seller-info-name"]/a')
-    org_code=re.sub(r'.*/(.*)/profile',r'\1',oref.get_attribute('href'))
+def loadSallerInfo(config,driver,vacancy, saller_dict):
+    print ('[DEBIG]loadSallerInfo {}'.format(vacancy['href']))
+    driver.get(vacancy['href'])
+    org_code=None
+    try: 
+        oref=driver.find_element(By.XPATH,'//div[@class="seller-info-name"]/a')
+        org_code=re.sub(r'.*/(.*)/profile',r'\1',oref.get_attribute('href'))
+    except:
+        oref=driver.find_element(By.XPATH,'//div[@class="seller-info-name"]')
     # грузим инфу
-    if org_code not in saller_dict:
+    if org_code is None or org_code not in saller_dict:
         button = driver.find_element(By.XPATH,'//button[span[@class="item-phone-button-sub-text"]]')
         button.click()
-        WebDriverWait(driver, 1).until(EC.presence_of_element_located((By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')))        
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')))        
         img = driver.find_element(By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')
         _,src = img.get_attribute('src').split('data:image/png;base64,')
         stream=io.BytesIO(base64.b64decode(src))
@@ -91,6 +118,8 @@ def loadSallerInfo(href,vacancy, saller_dict):
         values=[ item.get_attribute('textContent').strip() for item in item_phone_saller_info.find_elements(By.XPATH,'//div[@class="seller-info-value"]')]
         org_contact=values[1]
         org_address=values[2]
+        if org_code is None:
+            org_code=org_name 
         saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone}
     vacancy['ocode']=org_code
 
@@ -98,57 +127,113 @@ def loadSallerInfo(href,vacancy, saller_dict):
 def createQuery(config):
     _=config.get('KeyWords','keyWords')
     # убираем точку с конца
-    _=re.sub(r"\.\s*$",r"",_)
+    _=re.sub(r'\.\s*$',r'',_)
     # заменяем ' ,  ' на ','
-    _=re.sub(r"\s*,\s*",r",",_)
+    _=re.sub(r'\s*,\s*',r',',_)
     # заменяем последовательные пробелы на '+'
-    _=re.sub(r"\s+",r"+",_)
+    _=re.sub(r'\s+',r'+',_)
     words=_.split(',')
-    
+
     # заменяем пробелы перед и за запятой вместе с самой запятую на ',' 
-    regions=re.sub(r"\s*,\s*",r",",config.get('Avito','regions')).split(',')
+    regions=re.sub(r'\s*,\s*',r',',config.get('Avito','regions')).split(',')
     urls_info_list=[]
     for word in words:
         for region in regions:
             uri=config.get('Avito','url_template').format(region,word)
-            urls_info_list.append({'region':region,'word':word,'uri':uri}]
+            urls_info_list.append({'region':region_unit[region],'word':word,'uri':uri})
     return urls_info_list
 
-def loadVacancy(driver,vacancy_dict, region,word):
+def loadVacancy(config,driver,vacancy_dict, uri,region,word):
+    print ('[DEBIG]loadVacancy {} {} {}'.format(uri,region,word))
+    driver.get(uri) 
     _=driver.find_elements(By.CSS_SELECTOR,'div[class*="item_table clearfix js-catalog-item-enum"]')
-    if _ is None:
+    if _ is None or not _:
         return
     for div in _:
         id=div.get_attribute('id')
         if id in vacancy_dict:
-            vacancy_dict[id]['words'].append(word)
+            vacancy_dict[id]['words'].add(word)
             continue
         date=getADate(div.find_element(By.CSS_SELECTOR,'div[class*="date c-2"]').get_attribute('textContent').strip())
-        if date is not None:
+        if date is not None and date >= datetime.today()-timedelta(days=int(config.get('Avito','not_older_than'))):
             uriRef=div.find_element(By.CSS_SELECTOR,'a[class*="item-description-title-link"]')
-            href=uriRef.get_attribute('href')
-            vacancy_dict[id]={'words':[word],'region':region,'href':href,'vacancy':uriRef.get_attribute('textContent').strip(),'date':date}
+            href=uriRef.get_attribute('href').strip()
+            vacancy=uriRef.get_attribute('textContent').strip()
+            hot=0
+            now=datetime.today()
+            now=datetime(now.year,now.month,now.day)
+            if date==now:
+                hot=2
+            if date==now-timedelta(days=1):
+                hot=1
+            vacancy_dict[id]={'hot':hot,'words':set([word]),'region':region,'href':href,'vacancy':vacancy,'date':date.strftime('%Y-%m-%d')}
 
-
+def generateExel(config,expenses):
+    workbook = xlsxwriter.Workbook(config.get('Avito','exel_file_template_name').format(datetime.today().strftime('%Y_%m_%d')))
+    worksheet = workbook.add_worksheet()
+    hot_map={
+        2: workbook.add_format({'fg_color': '#3eff0f'}),
+        1: workbook.add_format({'fg_color': '#f3dc40'}),
+        0: workbook.add_format()
+    }
+    column_keys=['vacancy','region','words','date','name','address','contact','phone']
+    headers_map={'vacancy':'Описание',
+                'region':'Регион',
+                'words':'Ключевые слова',
+                'date':'Дата размещения',
+                'name':'Компания',
+                'address':'Адрес',
+                'contact':'Контактное лицо',
+                'phone':'Телефон'
+    }
+   
+    row=0
+    col=0
+    for key in column_keys:
+        worksheet.write(row, col,headers_map.get(key).decode('utf-8'),workbook.add_format({'bold': True}))
+        col+=1
+    for expensy in expenses:
+        row+=1
+        col=0
+        hot=expensy['hot']
+        for key in column_keys:    
+            try:
+                value= expensy[key].encode('utf-8')
+            except:
+                value = expensy[key]
+            worksheet.write(row, col,value,hot_map[hot])
+            col+=1
+    workbook.close() 
+ 
 
 def loadData(config):
     driver=None
     try:
-        driver=webdriver.PhantomJS(executable_path=config.get('Common','webdriver'))
+        if config.get('Common','webdrivertype')=='PhantomJS':
+            driver=webdriver.PhantomJS(executable_path=config.get('Common','webdriver'))
+        if config.get('Common','webdrivertype')=='Chrome':
+            driver=webdriver.Chrome(executable_path=config.get('Common','webdriver'))
         saller_dict={}
         vacancy_dict={}
         for url_info in createQuery(config):
-            loadVacancy(driver,vacancy_dict,region,word)
-        for vacancy in vacancy_dict:
-            loadSallerInfo(driver,vacancy,saller_dict)
+            loadVacancy(config,driver,vacancy_dict,url_info['uri'],url_info['region'],url_info['word'])
+        for key, vacancy in vacancy_dict.items():
+            loadSallerInfo(config,driver,vacancy,saller_dict)
+        
+        expenses=[]
+        for key, vacancy in vacancy_dict.items():
+            expensy=dict(vacancy)
+            expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
+            saller=saller_dict[vacancy['ocode']]
+            expensy.update(saller)
+            expenses.append(expensy)
+        generateExel(config,expenses)        
     except:
         if driver is not None:
             driver.close()
         traceback.print_exc(file=sys.stdout)
-#    createQuery(config)
-#    result = [{'source':'avito','header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
-#     'description':'Токарно-фрезерные, расточные, шлифовальные работы. Обработка давлением. ... «ПРЕССЛИТМАШ» изготавливает детали из металла по вашим образцам, эскизам или чертежам.'}]
     return None
+
 
 
 

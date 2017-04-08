@@ -4,7 +4,7 @@
 
 import imp,os
 import ConfigParser
-
+from datetime import datetime
 
 def __load_all_sources(config,dir='modules/sources'):
     sources =[]
@@ -17,6 +17,7 @@ def __load_all_sources(config,dir='modules/sources'):
     return sources
 
 if __name__=='__main__':
+    print '[START] : ' + datetime.now().isoformat()
     config = ConfigParser.RawConfigParser()
     config.read('./parser.cfg')
     sources = __load_all_sources(config)
@@ -26,8 +27,9 @@ if __name__=='__main__':
     for source in sources:
         print (source)
         #result.extend(source.loadData(config))
-        print (source.loadData(config))
+        source.loadData(config)
 
+    print '[END] : ' + datetime.now().isoformat()
     #print (result)
 
 
