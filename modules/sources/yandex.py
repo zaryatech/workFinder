@@ -43,7 +43,7 @@ def createQuery(keyWords):
 
 def loadData(config):
     keyWords=config.get('KeyWords','keyWords')
-    print(YANDEX_XML_TEMPLATE.render_unicode(query=createQuery(keyWords)))
+    #print(YANDEX_XML_TEMPLATE.render_unicode(query=createQuery(keyWords)))
     result = [{'source':'yandex','header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
      'description':'Токарно-фрезерные, расточные, шлифовальные работы. Обработка давлением. ... «ПРЕССЛИТМАШ» изготавливает детали из металла по вашим образцам, эскизам или чертежам.'}]
     return result

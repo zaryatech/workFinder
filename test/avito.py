@@ -7,7 +7,6 @@ import time
 import random
 
 class ListParser(HTMLParser):
-    
     def __init__(self):
         HTMLParser.__init__(self)
         self.info=[]
@@ -37,9 +36,7 @@ class ListParser(HTMLParser):
 
 
 if __name__== '__main__':
-
     #response = requests.get("http://bbc.com/")    
-
     with open('list.html') as f:
         html=f.read()
 
@@ -53,10 +50,13 @@ if __name__== '__main__':
 
     # отдыхаем
     for record in parser.info:
-        sleepSec =5+random.randrange(5)
-        print(u'sleep before parsing ' + record['title'] + ' sec: ' + str(sleepSec))
+#        sleepSec =5+random.randrange(5)
+#        print(u'sleep before parsing ' + record['title'] + ' sec: ' + str(sleepSec))
+
+        print ('https://www.avito.ru'+record['href'])
+#        response=requests.get("www.avito.ru"+record['href'])
         time.sleep(sleepSec)
-        print(u'continue processing ' + record['title'])    
+        print(u'continue processing ' + record['title'])
 
 
 

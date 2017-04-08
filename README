@@ -2,4 +2,5 @@ apt-get install tesseract-ocr libtesseract-dev libleptonica-dev
 pip install Cython
 pip install tesserocr 
 pip install requests
+pip install image
 
