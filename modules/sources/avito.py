@@ -102,9 +102,10 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
         oref=driver.find_element(By.XPATH,'//div[@class="seller-info-name"]')
     # грузим инфу
     if org_code is None or org_code not in saller_dict:
-        button = driver.find_element(By.XPATH,'//button[span[@class="item-phone-button-sub-text"]]')
-        button.click()
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')))        
+        button = WebDriverWait(driver,20).until(EC.element_to_be_clickable((By.XPATH,'//button[span[@class="item-phone-button-sub-text"]]')))
+        webdriver.ActionChains(driver).move_to_element_with_offset(button, 10, 10).click().perform()
+        #button.click()
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')))        
         img = driver.find_element(By.XPATH,'//div[@class="item-phone-big-number js-item-phone-big-number"]/img')
         _,src = img.get_attribute('src').split('data:image/png;base64,')
         stream=io.BytesIO(base64.b64decode(src))
