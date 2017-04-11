@@ -123,7 +123,7 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
         if org_code is None:
             org_code=org_name 
         saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone}
-    vacancy['ocode']=org_code
+    vacancy['companyId']=org_code
 
 
 def createQuery(config):
@@ -226,7 +226,7 @@ def loadData(config):
         for key, vacancy in vacancy_dict.items():
             expensy=dict(vacancy)
             expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
-            saller=saller_dict[vacancy['ocode']]
+            saller=saller_dict[vacancy['companyId']]
             expensy.update(saller)
             expenses.append(expensy)
         generateExel(config,expenses)        
