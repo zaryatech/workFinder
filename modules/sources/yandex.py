@@ -41,9 +41,10 @@ def createQuery(keyWords):
     query=re.sub(r"\s?,\s?",r"|",query)
     return query 
 
-def loadData(config):
-    keyWords=config.get('KeyWords','keyWords')
+def loadData(config,driver):
+    return []
+    #keyWords=config.get('yandex','keyWords')
     #print(YANDEX_XML_TEMPLATE.render_unicode(query=createQuery(keyWords)))
-    result = [{'source':'yandex','header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
-     'description':'Токарно-фрезерные, расточные, шлифовальные работы. Обработка давлением. ... «ПРЕССЛИТМАШ» изготавливает детали из металла по вашим образцам, эскизам или чертежам.'}]
+    #result = [{'source':'yandex','header':'Услуги механической обработки металла на заказ...', 'reference':'http://presslit.ru/tooling/',
+    # 'description':'Токарно-фрезерные, расточные, шлифовальные работы. Обработка давлением. ... «ПРЕССЛИТМАШ» изготавливает детали из металла по вашим образцам, эскизам или чертежам.'}]
     return result

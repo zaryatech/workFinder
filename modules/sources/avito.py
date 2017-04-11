@@ -17,9 +17,6 @@ import traceback
 locale.setlocale(locale.LC_ALL,'ru_RU.utf-8')
 import sys
 reload(sys)
-sys.setdefaultencoding('utf-8')
-import xlsxwriter
-
 date_unit={
 'Сегодня':datetime.today(),
 'Вчера':datetime.today()-timedelta(days=1)
@@ -38,14 +35,6 @@ month_unit={
     'октября':'Октябрь',
     'ноября':'Ноябрь',
     'декабря':'Декабрь'
-}
-
-region_unit={
-    'udmurtiya':'Удмуртия',
-    'bashkortostan':'Башкортостан',
-    'tatarstan':'Татарстан',
-    'kirovskaya_oblast':'Кировская область',
-    'permskiy_kray':'Пермский край',
 }
 
 
@@ -122,12 +111,12 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
         org_address=values[2]
         if org_code is None:
             org_code=org_name 
-        saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone}
+        saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone,'count':'0'}
     vacancy['companyId']=org_code
 
 
 def createQuery(config):
-    _=config.get('Avito','keyWords')
+    _=config.get('avito','keyWords')
     # убираем точку с конца
     _=re.sub(r'\.\s*$',r'',_)
     # заменяем ' ,  ' на ','
@@ -137,12 +126,12 @@ def createQuery(config):
     words=_.split(',')
 
     # заменяем пробелы перед и за запятой вместе с самой запятую на ',' 
-    regions=re.sub(r'\s*,\s*',r',',config.get('Avito','regions')).split(',')
+    regions=re.sub(r'\s*,\s*',r',',config.get('avito','regions')).split(',')
     urls_info_list=[]
     for word in words:
         for region in regions:
-            uri=config.get('Avito','url_template').format(region,word)
-            urls_info_list.append({'region':region_unit[region],'word':word,'uri':uri})
+            uri=config.get('avito','url_template').format(region,word)
+            urls_info_list.append({'region':region,'word':word,'uri':uri})
     return urls_info_list
 
 def loadVacancy(config,driver,vacancy_dict, uri,region,word):
@@ -157,7 +146,7 @@ def loadVacancy(config,driver,vacancy_dict, uri,region,word):
             vacancy_dict[id]['words'].add(word)
             continue
         date=getADate(div.find_element(By.CSS_SELECTOR,'div[class*="date c-2"]').get_attribute('textContent').strip())
-        if date is not None and date >= datetime.today()-timedelta(days=int(config.get('Avito','not_older_than'))):
+        if date is not None and date >= datetime.today()-timedelta(days=int(config.get('avito','not_older_than'))):
             uriRef=div.find_element(By.CSS_SELECTOR,'a[class*="item-description-title-link"]')
             href=uriRef.get_attribute('href').strip()
             vacancy=uriRef.get_attribute('textContent').strip()
@@ -170,51 +159,11 @@ def loadVacancy(config,driver,vacancy_dict, uri,region,word):
                 hot=1
             vacancy_dict[id]={'hot':hot,'words':set([word]),'region':region,'href':href,'vacancy':vacancy,'date':date.strftime('%Y-%m-%d')}
 
-def generateExel(config,expenses):
-    workbook = xlsxwriter.Workbook(config.get('Avito','exel_file_template_name').format(datetime.today().strftime('%Y_%m_%d')))
-    worksheet = workbook.add_worksheet()
-    hot_map={
-        2: workbook.add_format({'fg_color': '#3eff0f'}),
-        1: workbook.add_format({'fg_color': '#f3dc40'}),
-        0: workbook.add_format()
-    }
-    column_keys=['vacancy','region','words','date','name','address','contact','phone']
-    headers_map={'vacancy':'Описание',
-                'region':'Регион',
-                'words':'Ключевые слова',
-                'date':'Дата размещения',
-                'name':'Компания',
-                'address':'Адрес',
-                'contact':'Контактное лицо',
-                'phone':'Телефон'
-    }
-   
-    row=0
-    col=0
-    for key in column_keys:
-        worksheet.write(row, col,headers_map.get(key).decode('utf-8'),workbook.add_format({'bold': True}))
-        col+=1
-    for expensy in expenses:
-        row+=1
-        col=0
-        hot=expensy['hot']
-        for key in column_keys:    
-            try:
-                value= expensy[key].encode('utf-8')
-            except:
-                value = expensy[key]
-            worksheet.write(row, col,value,hot_map[hot])
-            col+=1
-    workbook.close() 
- 
 
-def loadData(config):
-    driver=None
+
+def loadData(config,driver):
+    expenses=[]
     try:
-        if config.get('Common','webdrivertype')=='PhantomJS':
-            driver=webdriver.PhantomJS(executable_path=config.get('Common','webdriver'))
-        if config.get('Common','webdrivertype')=='Chrome':
-            driver=webdriver.Chrome(executable_path=config.get('Common','webdriver'))
         saller_dict={}
         vacancy_dict={}
         for url_info in createQuery(config):
@@ -222,19 +171,18 @@ def loadData(config):
         for key, vacancy in vacancy_dict.items():
             loadSallerInfo(config,driver,vacancy,saller_dict)
         
-        expenses=[]
+ 
         for key, vacancy in vacancy_dict.items():
             expensy=dict(vacancy)
             expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
             saller=saller_dict[vacancy['companyId']]
             expensy.update(saller)
             expenses.append(expensy)
-        generateExel(config,expenses)        
     except:
         if driver is not None:
             driver.close()
         traceback.print_exc(file=sys.stdout)
-    return None
+    return expenses
 
 
 
