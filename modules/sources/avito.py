@@ -111,6 +111,7 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
         stream=io.BytesIO(base64.b64decode(src))
         img = Image.open(stream)
         with PyTessBaseAPI() as api:
+            api.SetVariable("tessedit_char_whitelist", "0123456789 -")
             api.SetImage(img)    
             org_phone=api.GetUTF8Text().strip()
         org_name=oref.get_attribute('textContent').strip()
@@ -126,7 +127,7 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
 
 
 def createQuery(config):
-    _=config.get('KeyWords','keyWords')
+    _=config.get('Avito','keyWords')
     # убираем точку с конца
     _=re.sub(r'\.\s*$',r'',_)
     # заменяем ' ,  ' на ','
