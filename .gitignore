@@ -1,2 +1,9 @@
 *.pyc
 test
+.ropeproject
+chromedriver
+romedriver
+ghostdriver.log
+list.html
+phantomjs
+
