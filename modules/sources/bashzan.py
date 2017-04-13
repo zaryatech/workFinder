@@ -17,20 +17,18 @@ def getSallerInfo(config,driver,href,expensy):
     driver.get(href)
     expensy['name']=driver.find_element(By.XPATH,'//div[@id="vacancy-company"]').get_attribute('textContent')\
         .encode('utf-8').strip()
-    expensy['count']=driver.find_element(By.XPATH,'//div[@class="field"]/div[@class="field-value" and position()=2]')\
-        .get_attribute('textContent').encode('utf-8').strip()
-    expensy['org_address']=driver.find_element(By.XPATH,'//div[@class="vacancy-fields-group" and position()=2]/div[@class="field" and position()=1]/div[@class="field-value"]')\
-        .get_attribute('textContent').encode('utf-8').strip()
-    print(expensy['org_address'])
-    #if companyId not in saller_dict:
-    #    driver.get(config.get('mintrud18','company_template').format(companyId))
-    #    elements=driver.find_elements(By.XPATH,'//div[@class="panel-body"]/div[@class="row"]/div[@class="col-sm-9"]')
-    #    org_contact=elements[0].get_attribute('textContent').strip()
-    #    org_address=elements[3].get_attribute('textContent').strip()
-    #    org_phone=elements[4].get_attribute('textContent').strip()
-    #    saller_dict[companyId]={'code':companyId, 'contact':org_contact, 'address':org_address, 'phone':org_phone} 
-    #return saller_dict[companyId]
-
+    vacancy_groups=driver.find_elements(By.XPATH,'//div[@class="vacancy-fields-group"]')
+    expensy['count']=vacancy_groups[0].find_elements(By.XPATH,'.//div[@class="field-value"]')[1].get_attribute('textContent')
+    contacts=vacancy_groups[1].find_elements(By.XPATH,'.//div[@class="field-value"]')
+    if len(contacts)>5:
+        expensy['address']=contacts[0].get_attribute('textContent')
+        expensy['contact']=contacts[4].get_attribute('textContent') 
+        expensy['phone']=contacts[5].get_attribute('textContent') 
+    else:
+        expensy['address']=contacts[0].get_attribute('textContent')
+        expensy['contact']=contacts[3].get_attribute('textContent') 
+        expensy['phone']=contacts[4].get_attribute('textContent') 
+         
 
 def createQuery(config,driver):
     _=config.get('bashzan','keyWords') 
@@ -85,11 +83,10 @@ def getDate(dateStr):
 def loadData(config,driver):
     saller_dict={}
     vacancy_dict={}
-    process_next_page=True
     for url_info in createQuery(config,driver):
-        if not process_next_page:
-            break
-        driver.get(url_info['uri'])
+        url=url_info['uri']
+        print(url)
+        driver.get(url)
         for row in driver.find_elements(By.CSS_SELECTOR,'div[class*="vacancy clearfix"]'):
             try:
                 _=row.find_element(By.XPATH,'.//div[@class="vacancy-name"]/a')
@@ -102,8 +99,7 @@ def loadData(config,driver):
                      date=getDate(_)
                      notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
                      if date<notBefore:
-                        process_next_page=False
-                        continue
+                        break
                      hot=0
                      now=datetime.today()
                      now=datetime(now.year,now.month,now.day)
@@ -126,9 +122,15 @@ def loadData(config,driver):
        
     expenses=[]    
     for key,vacancy in vacancy_dict.items():
-        expensy=dict(vacancy)
-        expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
-        getSallerInfo(config,driver,vacancy['href'],expensy)
-        #expenses.append(expensy)
+        try:
+            expensy=dict(vacancy)
+            expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
+            getSallerInfo(config,driver,vacancy['href'],expensy)
+            expenses.append(expensy)
+        except:
+            print(vacancy['href'])
+            traceback.print_exc(file=sys.stdout)
+ 
+        
     return expenses
 
