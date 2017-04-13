@@ -5,3 +5,7 @@ pip install requests
 pip install image
 pip install xlsxwriter
 
+
+following-sibling
+
+driver.find_elements_by_xpath("//*[contains(text(), 'My Button')]")
