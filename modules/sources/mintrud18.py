@@ -77,7 +77,7 @@ def loadData(config,driver):
                      vacancy['region']=url_info['region']
                      vacancy_dict[id]=vacancy
                 else:
-                     vacancy_dict[id]['words'].url_info['region']
+                     vacancy_dict[id]['words'].add(word)
 
             except:
                 traceback.print_exc(file=sys.stdout)
