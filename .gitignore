@@ -6,4 +6,6 @@ romedriver
 ghostdriver.log
 list.html
 phantomjs
-
+*.xlsx
+.~*
+*.back

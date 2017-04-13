@@ -14,21 +14,20 @@ reload(sys)
 
 
 def getSallerInfo(config,driver,href,expensy):
+    print(href)
     driver.get(href)
     expensy['name']=driver.find_element(By.XPATH,'//div[@id="vacancy-company"]').get_attribute('textContent')\
         .encode('utf-8').strip()
     vacancy_groups=driver.find_elements(By.XPATH,'//div[@class="vacancy-fields-group"]')
     expensy['count']=vacancy_groups[0].find_elements(By.XPATH,'.//div[@class="field-value"]')[1].get_attribute('textContent')
-    contacts=vacancy_groups[1].find_elements(By.XPATH,'.//div[@class="field-value"]')
-    if len(contacts)>5:
-        expensy['address']=contacts[0].get_attribute('textContent')
-        expensy['contact']=contacts[4].get_attribute('textContent') 
-        expensy['phone']=contacts[5].get_attribute('textContent') 
-    else:
-        expensy['address']=contacts[0].get_attribute('textContent')
-        expensy['contact']=contacts[3].get_attribute('textContent') 
-        expensy['phone']=contacts[4].get_attribute('textContent') 
-         
+    contact_group=vacancy_groups[1]
+    address=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Адрес")]/following-sibling::div')
+    expensy['address']=address.get_attribute('textContent')
+    contact=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Имя контактного лица")]/following-sibling::div')
+    expensy['contact']=contact.get_attribute('textContent') 
+    phone=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Телефон контактного лица")]/following-sibling::div')
+    expensy['phone']=phone.get_attribute('textContent') 
+        
 
 def createQuery(config,driver):
     _=config.get('bashzan','keyWords') 
@@ -39,20 +38,26 @@ def createQuery(config,driver):
     # заменяем последовательные пробелы на '+'
     _=re.sub(r'\s+',r'%20',_)
     words=_.split(',')
-    urls_info_list=[]
+    urls_info_dict={}
     notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
     for word in words:
         page=1
         uri=config.get('bashzan','url_template').format(word,str(page))
-        urls_info_list.append({'region':'bashkortostan','word':word,'uri':uri})
-        driver.get(uri)
-        nav_list=driver.find_elements(By.XPATH,'//nav[@class="pagination"]/span')
+        urls_info_dict[word]=[]
+        urls_info_dict[word].append(uri)
+        driver.set_page_load_timeout(10)
+        try:
+            driver.get(uri)
+        except:
+            print('[WARNING] Timeout exception')
+            driver.get(uri)
+        nav_list=driver.find_elements(By.XPATH,'//nav[@class="pagination" and position()=1]/span')
         if len(nav_list)>1:
-            for i in range(2,len(nav_list)):
+            for i in range(2,len(nav_list)+1):
                 uri=config.get('bashzan','url_template').format(word,str(i))
-                urls_info_list.append({'region':'bashkortostan','word':word,'uri':uri})
+                urls_info_dict[word].append(uri)
                  
-    return urls_info_list
+    return urls_info_dict
 
    
 month_unit={
@@ -83,41 +88,43 @@ def getDate(dateStr):
 def loadData(config,driver):
     saller_dict={}
     vacancy_dict={}
-    for url_info in createQuery(config,driver):
-        url=url_info['uri']
-        print(url)
-        driver.get(url)
-        for row in driver.find_elements(By.CSS_SELECTOR,'div[class*="vacancy clearfix"]'):
-            try:
-                _=row.find_element(By.XPATH,'.//div[@class="vacancy-name"]/a')
-                id=re.sub(r'.*/vacancies/(.*)$',r'\1',_.get_attribute('href'))
-                if id not in vacancy_dict:
-                     vacancy={}
-                     vacancy['vacancy']=_.get_attribute('textContent')
-                     vacancy['href']=_.get_attribute('href')
-                     _=row.find_element(By.XPATH,'.//div[@class="vacancy-date"]').get_attribute('textContent').strip().encode('utf-8')
-                     date=getDate(_)
-                     notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
-                     if date<notBefore:
-                        break
-                     hot=0
-                     now=datetime.today()
-                     now=datetime(now.year,now.month,now.day)
-                     if date>=now-timedelta(days=1):
-                         hot=2
-                     if date<now-timedelta(days=1) and date>=now-timedelta(days=3):
-                         hot=1
-                     vacancy['hot']=hot
-                     vacancy['date']=date.strftime('%Y-%m-%d')
-                     vacancy['words']=set([url_info['word']])
-                     vacancy['region']=url_info['region']
-                     vacancy_dict[id]=vacancy
-                else:
-                     vacancy_dict[id]['words'].add(word)
+    for word, value in createQuery(config,driver).items():
+        next_word=False
+        for uri in value:
+            driver.get(uri)
+            if next_word==True:
+                break
+            for row in driver.find_elements(By.CSS_SELECTOR,'div[class*="vacancy clearfix"]'):
+                try:
+                    _=row.find_element(By.XPATH,'.//div[@class="vacancy-name"]/a')
+                    id=re.sub(r'.*/vacancies/(.*)$',r'\1',_.get_attribute('href'))
+                    if id not in vacancy_dict:
+                         vacancy={}
+                         vacancy['vacancy']=_.get_attribute('textContent')
+                         vacancy['href']=_.get_attribute('href')
+                         _=row.find_element(By.XPATH,'.//div[@class="vacancy-date"]').get_attribute('textContent').strip().encode('utf-8')
+                         date=getDate(_)
+                         notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
+                         if date<notBefore:
+                            next_word=True
+                            break
+                         hot=0
+                         now=datetime.today()
+                         now=datetime(now.year,now.month,now.day)
+                         if date>=now-timedelta(days=1):
+                             hot=2
+                         if date<now-timedelta(days=1) and date>=now-timedelta(days=3):
+                             hot=1
+                         vacancy['hot']=hot
+                         vacancy['date']=date.strftime('%Y-%m-%d')
+                         vacancy['words']=set([word])
+                         vacancy['region']='bashkortostan'
+                         vacancy_dict[id]=vacancy
+                    else:
+                         vacancy_dict[id]['words'].add(word)
 
-            except:
-                traceback.print_exc(file=sys.stdout)
-                #pass
+                except:
+                    traceback.print_exc(file=sys.stdout)
 
        
     expenses=[]    
