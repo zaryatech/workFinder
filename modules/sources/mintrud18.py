@@ -20,7 +20,8 @@ def getSaller(config,driver,saller_dict,companyId):
         org_contact=elements[0].get_attribute('textContent').strip()
         org_address=elements[3].get_attribute('textContent').strip()
         org_phone=elements[4].get_attribute('textContent').strip()
-        saller_dict[companyId]={'code':companyId, 'contact':org_contact, 'address':org_address, 'phone':org_phone} 
+        org_mail=elements[2].get_attribute('textContent').strip()
+        saller_dict[companyId]={'code':companyId, 'contact':org_contact, 'address':org_address, 'phone':org_phone,'mail':org_mail} 
     return saller_dict[companyId]
 
 

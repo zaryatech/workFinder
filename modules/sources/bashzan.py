@@ -26,7 +26,13 @@ def getSallerInfo(config,driver,href,expensy):
     contact=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Имя контактного лица")]/following-sibling::div')
     expensy['contact']=contact.get_attribute('textContent') 
     phone=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Телефон контактного лица")]/following-sibling::div')
-    expensy['phone']=phone.get_attribute('textContent') 
+    expensy['phone']=phone.get_attribute('textContent')
+    try: 
+        mail=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "E-mail контактного лица")]/following-sibling::div')
+        expensy['mail']=mail
+    except:
+        expensy['mail']=''  
+
         
 
 def createQuery(config,driver):

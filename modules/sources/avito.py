@@ -111,7 +111,7 @@ def loadSallerInfo(config,driver,vacancy, saller_dict):
         org_address=values[2]
         if org_code is None:
             org_code=org_name 
-        saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone,'count':'0'}
+        saller_dict[org_code]={'code':org_code, 'name':org_name,'contact':org_contact, 'address':org_address, 'phone':org_phone,'count':'1','mail':''}
     vacancy['companyId']=org_code
 
 
