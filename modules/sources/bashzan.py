@@ -1,4 +1,4 @@
-#!/use/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from datetime import datetime, timedelta
@@ -19,17 +19,17 @@ def getSallerInfo(config,driver,href,expensy):
     expensy['name']=driver.find_element(By.XPATH,'//div[@id="vacancy-company"]').get_attribute('textContent')\
         .encode('utf-8').strip()
     vacancy_groups=driver.find_elements(By.XPATH,'//div[@class="vacancy-fields-group"]')
-    expensy['count']=vacancy_groups[0].find_elements(By.XPATH,'.//div[@class="field-value"]')[1].get_attribute('textContent')
+    expensy['count']=vacancy_groups[0].find_elements(By.XPATH,'.//div[@class="field-value"]')[1].get_attribute('textContent').strip()
     contact_group=vacancy_groups[1]
     address=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Адрес")]/following-sibling::div')
-    expensy['address']=address.get_attribute('textContent')
+    expensy['address']=address.get_attribute('textContent').strip()
     contact=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Имя контактного лица")]/following-sibling::div')
-    expensy['contact']=contact.get_attribute('textContent') 
+    expensy['contact']=contact.get_attribute('textContent').strip()
     phone=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Телефон контактного лица")]/following-sibling::div')
-    expensy['phone']=phone.get_attribute('textContent')
+    expensy['phone']=phone.get_attribute('textContent').strip()
     try: 
         mail=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "E-mail контактного лица")]/following-sibling::div')
-        expensy['mail']=mail
+        expensy['mail']=mail.get_attribute('textContent').strip()
     except:
         expensy['mail']=''  
 
@@ -41,8 +41,6 @@ def createQuery(config,driver):
     _=re.sub(r'\.\s*$',r'',_)
     # заменяем ' ,  ' на ','
     _=re.sub(r'\s*,\s*',r',',_)
-    # заменяем последовательные пробелы на '+'
-    _=re.sub(r'\s+',r'%20',_)
     words=_.split(',')
     urls_info_dict={}
     notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
@@ -104,28 +102,28 @@ def loadData(config,driver):
                 try:
                     _=row.find_element(By.XPATH,'.//div[@class="vacancy-name"]/a')
                     id=re.sub(r'.*/vacancies/(.*)$',r'\1',_.get_attribute('href'))
+                    vDate=row.find_element(By.XPATH,'.//div[@class="vacancy-date"]').get_attribute('textContent').strip().encode('utf-8')
+                    date=getDate(vDate)
+                    notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
+                    if date<notBefore:
+                        next_word=True
+                        break
                     if id not in vacancy_dict:
-                         vacancy={}
-                         vacancy['vacancy']=_.get_attribute('textContent')
-                         vacancy['href']=_.get_attribute('href')
-                         _=row.find_element(By.XPATH,'.//div[@class="vacancy-date"]').get_attribute('textContent').strip().encode('utf-8')
-                         date=getDate(_)
-                         notBefore=datetime.today()-timedelta(days=int(config.get('bashzan','not_older_than')))
-                         if date<notBefore:
-                            next_word=True
-                            break
-                         hot=0
-                         now=datetime.today()
-                         now=datetime(now.year,now.month,now.day)
-                         if date>=now-timedelta(days=1):
-                             hot=2
-                         if date<now-timedelta(days=1) and date>=now-timedelta(days=3):
-                             hot=1
-                         vacancy['hot']=hot
-                         vacancy['date']=date.strftime('%Y-%m-%d')
-                         vacancy['words']=set([word])
-                         vacancy['region']='bashkortostan'
-                         vacancy_dict[id]=vacancy
+                        vacancy={}
+                        vacancy['vacancy']=_.get_attribute('textContent')
+                        vacancy['href']=_.get_attribute('href')
+                        hot=0
+                        now=datetime.today()
+                        now=datetime(now.year,now.month,now.day)
+                        if date>=now-timedelta(days=1):
+                            hot=2
+                        if date<now-timedelta(days=1) and date>=now-timedelta(days=3):
+                            hot=1
+                        vacancy['hot']=hot
+                        vacancy['date']=date.strftime('%Y-%m-%d')
+                        vacancy['words']=set([word])
+                        vacancy['region']='bashkortostan'
+                        vacancy_dict[id]=vacancy
                     else:
                          vacancy_dict[id]['words'].add(word)
 
@@ -141,7 +139,7 @@ def loadData(config,driver):
             getSallerInfo(config,driver,vacancy['href'],expensy)
             expenses.append(expensy)
         except:
-            print(vacancy['href'])
+            print('[ERROR] href: {}'.format(vacancy['href']))
             traceback.print_exc(file=sys.stdout)
  
         
