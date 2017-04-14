@@ -88,6 +88,7 @@ if __name__=='__main__':
         driver=webdriver.PhantomJS(executable_path=config.get('common','webdriver'))
     if config.get('common','webdrivertype')=='Chrome':
         driver=webdriver.Chrome(executable_path=config.get('common','webdriver'))
+    driver.implicitly_wait(10)
     try:
         if len(sys.argv)==1: 
             for module,source in sources.items():

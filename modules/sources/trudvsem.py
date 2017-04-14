@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import traceback,sys
 import re,unicodedata
-import locale
+import locale,time
 locale.setlocale(locale.LC_ALL,'ru_RU.utf-8')
 import sys
 reload(sys)
@@ -32,7 +32,7 @@ def createQuery(config):
     urls_info_dict={}
     for word in words:
         urls_info_dict[word]=[]
-        regions='bashkortostan'.split(',')
+        regions=config.get('trudvsem','regions').split(',')
         for region in regions:
             url=config.get('trudvsem','url_template').format(word,region_dict[region])
             urls_info_dict[word].append({'region':region,'url':url})
@@ -42,20 +42,28 @@ def createQuery(config):
 def getVacancy(config,driver,href,expensy):
     try:
         driver.get(href)
-        address=driver.find_element(By.XPATH,'//div/b[contains(text(), "Дополнительная информация по адресу")]/following-sibling::span')
+  #      try:
+        address=driver.find_element(By.XPATH,'//div/b[contains(text(), "Адрес")]/following-sibling::span')
+ #       except:
+#            address=driver.find_element(By.XPATH,'//div/b[contains(text(), "Адрес места работы")]/following-sibling::span')
         expensy['address']=address.get_attribute('textContent').strip()
         count=driver.find_element(By.XPATH,'//div/b[contains(text(), "Количество рабочих мест")]/following-sibling::span')
         expensy['count']=count.get_attribute('textContent').strip()
         name=driver.find_element(By.XPATH,'//div[@class="company"]/a')
         expensy['name']=name.get_attribute('textContent').strip()
-        contact=driver.find_element(By.XPATH,'//div/b[contains(text(), "Контактное лицо")]/following-sibling::span')
-        expensy['contact']=contact.get_attribute('textContent').strip()
-        _=contact.find_element(By.XPATH,'./../following-sibling::div')
-        phone=_.find_element(By.XPATH,'./div/span')
-        expensy['phone']=phone.get_attribute('textContent').strip()
-        _=_.find_element(By.XPATH,'./following-sibling::div')
         try:
-            mail=_.find_element(By.XPATH,'./div/a')
+            contact=driver.find_element(By.XPATH,'//div/b[contains(text(), "Контактное лицо")]/following-sibling::span')
+            expensy['contact']=contact.get_attribute('textContent').strip()
+        except:
+            expensy['contact']=''
+        phone=driver.find_element(By.XPATH,'//div/b[contains(text(),"{}")]/following-sibling::span'.format("""
+    
+    Телефон"""))
+        expensy['phone']=phone.get_attribute('textContent').strip()
+        try:
+            mail=driver.find_element(By.XPATH,'//div/b[contains(text(),"{}")]/following-sibling::a'.format("""
+    
+    Эл. почта"""))
             expensy['mail']=mail.get_attribute('textContent').strip()
         except:
             expensy['mail']=''
@@ -75,6 +83,8 @@ def loadData(config,driver):
             region=reg_url['region']
             url=reg_url['url']
             driver.get(url)
+            print(region)
+            print(url)
             while next_page:
                 try:
                     try:
@@ -82,8 +92,11 @@ def loadData(config,driver):
                     except:
                         WebDriverWait(driver,5).until(EC.presence_of_element_located((By.CSS_SELECTOR,'p[class*="no-data"]')))
  
+                    time.sleep(5)
+                    i=0
                     item_rows=driver.find_elements(By.CSS_SELECTOR,'div[class*="item row"]:not([class*="mobility-panel-search"])')
                     for item in item_rows:
+                        i=i+1
                         try:
                             date=item.find_element(By.XPATH,'.//span[@class="date"]/time').get_attribute('textContent').strip()
                             date=datetime.strptime(date,'%d.%m.%Y')
@@ -113,8 +126,11 @@ def loadData(config,driver):
                             else:
                                 vacancy_dict[id]['words'].add(word)
                         except:
+                            print '[ERROR] {}'.format(url)
+                            print '[ERROR] {}'.format(i)
+                            print item.get_attribute('innerHTML')
                             traceback.print_exc(file=sys.stdout)
-                            pass
+                            raise
 
                     if next_page:
                         nextButton=driver.find_elements(By.XPATH,'//a[@class="next"]')
@@ -126,13 +142,13 @@ def loadData(config,driver):
                 except:
                     traceback.print_exc(file=sys.stdout)
                     next_page=False
+                    raise
 
     expenses=[]
     for id,vacancy in vacancy_dict.items():
         expensy=dict(vacancy)
         expensy['words']=', '.join(vacancy['words'])
         getVacancy(config,driver,vacancy['href'],expensy)
-        print(expensy)
         expenses.append(expensy)
     return expenses
 
