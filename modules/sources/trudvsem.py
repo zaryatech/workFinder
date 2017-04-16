@@ -122,6 +122,7 @@ def loadData(config,driver):
                                 vacancy['words']=set([word])
                                 vacancy['region']=region
                                 vacancy['href']=href
+                                vacancy['id']=id
                                 vacancy_dict[id]=vacancy
                             else:
                                 vacancy_dict[id]['words'].add(word)
@@ -149,6 +150,7 @@ def loadData(config,driver):
         expensy=dict(vacancy)
         expensy['words']=', '.join(vacancy['words'])
         getVacancy(config,driver,vacancy['href'],expensy)
+        expensy['source']=re.sub(r'.*\.(.*)$',r'\1',__name__)
         expenses.append(expensy)
     return expenses
 

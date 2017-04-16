@@ -157,7 +157,7 @@ def loadVacancy(config,driver,vacancy_dict, uri,region,word):
                 hot=2
             if date==now-timedelta(days=1):
                 hot=1
-            vacancy_dict[id]={'hot':hot,'words':set([word]),'region':region,'href':href,'vacancy':vacancy,'date':date.strftime('%Y-%m-%d')}
+            vacancy_dict[id]={'id':id,'hot':hot,'words':set([word]),'region':region,'href':href,'vacancy':vacancy,'date':date.strftime('%Y-%m-%d')}
 
 
 
@@ -177,6 +177,7 @@ def loadData(config,driver):
             expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
             saller=saller_dict[vacancy['companyId']]
             expensy.update(saller)
+            expensy['source']=re.sub(r'.*\.(.*)$',r'\1',__name__)
             expenses.append(expensy)
     except:
         if driver is not None:

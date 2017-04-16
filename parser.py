@@ -11,8 +11,11 @@ sys.setdefaultencoding('utf-8')
 import xlsxwriter
 from selenium import webdriver
 
-column_keys=['vacancy','region','words','date','name','address','contact','phone','mail','count']
-headers_map={            'vacancy':'Описание',
+column_keys=['source','id','vacancy','region','words','date','name','address','contact','phone','mail','count']
+headers_map={
+            'source':'Источник',
+            'id':'Идентификатор',
+            'vacancy':'Описание',
             'region':'Регион',
             'words':'Ключевые слова',
             'date':'Дата размещения',

@@ -77,6 +77,7 @@ def loadData(config,driver):
                      vacancy_dict[id]=vacancy
                      vacancy['region']=url_info['region']
                      vacancy_dict[id]=vacancy
+                     vacancy['id']=id
                 else:
                      vacancy_dict[id]['words'].add(word)
 
@@ -91,6 +92,7 @@ def loadData(config,driver):
         expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
         saller=getSaller(config,driver,saller_dict,vacancy['companyId'])
         expensy.update(saller)
+        expensy['source']=re.sub(r'.*\.(.*)$',r'\1',__name__)
         expenses.append(expensy)
     return expenses
 

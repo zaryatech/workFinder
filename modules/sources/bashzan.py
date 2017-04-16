@@ -123,6 +123,7 @@ def loadData(config,driver):
                         vacancy['date']=date.strftime('%Y-%m-%d')
                         vacancy['words']=set([word])
                         vacancy['region']='bashkortostan'
+                        vacancy['id']=id
                         vacancy_dict[id]=vacancy
                     else:
                          vacancy_dict[id]['words'].add(word)
@@ -137,6 +138,7 @@ def loadData(config,driver):
             expensy=dict(vacancy)
             expensy['words']=re.sub(r'\+',r' ',', '.join(vacancy['words']))
             getSallerInfo(config,driver,vacancy['href'],expensy)
+            expensy['source']=re.sub(r'.*\.(.*)$',r'\1',__name__)
             expenses.append(expensy)
         except:
             print('[ERROR] href: {}'.format(vacancy['href']))
