@@ -79,11 +79,10 @@ def __load_all_sources(config,dir='modules/sources'):
             sources[module_name.split('.')[0]]=foo
     return sources
 
- 
-if __name__=='__main__':
+
+
+def loadData(config):
     print ('[START] : ' , datetime.now().isoformat())
-    config = ConfigParser.RawConfigParser()
-    config.read('./parser.cfg')
     sources = __load_all_sources(config)
 
     # header reference description contacts
@@ -92,19 +91,20 @@ if __name__=='__main__':
     if config.get('common','webdrivertype')=='Chrome':
         driver=webdriver.Chrome(executable_path=config.get('common','webdriver'))
     driver.implicitly_wait(10)
+    result=[]
     try:
         if len(sys.argv)==1: 
             for module,source in sources.items():
                 print ('[INFO] processing ', module)
                 expenses=source.loadData(config,driver)
-                generateExel(module,config.get(module,'exel_file_template_name'),expenses)
+                result.append([module,expenses])
         else:
             module_list=sys.argv[1:]
             for module,source in sources.items():
                 if module in module_list:
                     print ('[INFO] processing ', module)
                     expenses=source.loadData(config,driver)
-                    generateExel(module,config.get(module,'exel_file_template_name'),expenses)
+                    result.append([module,expenses])
              
     except:
         traceback.print_exc(file=sys.stdout)
@@ -113,6 +113,18 @@ if __name__=='__main__':
             driver.close()
  
     print ('[END] : ' , datetime.now().isoformat())
+    return result
+
+
+
+ 
+if __name__=='__main__':
+    config = ConfigParser.RawConfigParser()
+    config.read('./parser.cfg')
+    sources = __load_all_sources(config)
+    for module,expenses in loadData(config):
+        generateExel(module,config.get(module,'exel_file_template_name'),expenses)
+
 
 
 
