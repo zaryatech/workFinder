@@ -21,12 +21,21 @@ def getSallerInfo(config,driver,href,expensy):
     vacancy_groups=driver.find_elements(By.XPATH,'//div[@class="vacancy-fields-group"]')
     expensy['count']=vacancy_groups[0].find_elements(By.XPATH,'.//div[@class="field-value"]')[1].get_attribute('textContent').strip()
     contact_group=vacancy_groups[1]
-    address=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Адрес")]/following-sibling::div')
-    expensy['address']=address.get_attribute('textContent').strip()
-    contact=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Имя контактного лица")]/following-sibling::div')
-    expensy['contact']=contact.get_attribute('textContent').strip()
-    phone=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Телефон контактного лица")]/following-sibling::div')
-    expensy['phone']=phone.get_attribute('textContent').strip()
+    try:
+        address=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Адрес")]/following-sibling::div')
+        expensy['address']=address.get_attribute('textContent').strip()
+    except:
+        expensy['address']=''
+    try:
+        contact=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Имя контактного лица")]/following-sibling::div')
+        expensy['contact']=contact.get_attribute('textContent').strip()
+    except:
+        expensy['contact']=''
+    try:
+        phone=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "Телефон контактного лица")]/following-sibling::div')
+        expensy['phone']=phone.get_attribute('textContent').strip()
+    except:
+        expensy['phone']-''
     try: 
         mail=contact_group.find_element(By.XPATH,'.//div[@class="field-label" and contains(text(), "E-mail контактного лица")]/following-sibling::div')
         expensy['mail']=mail.get_attribute('textContent').strip()
