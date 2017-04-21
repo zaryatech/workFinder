@@ -1,16 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import {
-    Column,
-    Integer,
-    DateTime,
-    ForeignKey
-}
-
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-
+from . import Base
 
 
 class Vacancy(Base):

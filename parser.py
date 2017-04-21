@@ -13,11 +13,11 @@ from selenium import webdriver
 
 column_keys=['source','id','vacancy','region','words','date','name','address','contact','phone','mail','count']
 headers_map={
-            'source':'Источник',
-            'id':'Идентификатор',
+#            'source':'Источник',
+#            'id':'Идентификатор',
             'vacancy':'Описание',
             'region':'Регион',
-            'words':'Ключевые слова',
+#            'words':'Ключевые слова',
             'date':'Дата размещения',
             'name':'Компания',
             'address':'Адрес',
@@ -105,13 +105,13 @@ def loadData(config):
                     print ('[INFO] processing ', module)
                     expenses=source.loadData(config,driver)
                     result.append([module,expenses])
-             
+
     except:
         traceback.print_exc(file=sys.stdout)
     finally:
         if driver is not None:
             driver.close()
- 
+
     print ('[END] : ' , datetime.now().isoformat())
     return result
 

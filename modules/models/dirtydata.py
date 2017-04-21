@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import {
-    Column,
-    Integer,
-    DateTime
-}
+from sqlalchemy import Column, Integer, DateTime
 
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
 
-
+from . import Base
 
 class DirtyData(Base):
     """ Хранилище первоначальной информации """
